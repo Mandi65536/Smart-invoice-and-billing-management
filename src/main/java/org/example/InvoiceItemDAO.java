@@ -54,7 +54,7 @@ public class InvoiceItemDAO {
 
         String query =
                 "SELECT * FROM invoice_items " +
-                        "WHERE invoice_id = ? ORDER BY invoice_item_id";
+                        "WHERE invoice_id = ? ORDER BY item_id";
 
         try (
                 Connection connection = DBConnection.getConnection();
@@ -68,7 +68,7 @@ public class InvoiceItemDAO {
                 while (resultSet.next()) {
 
                     items.add(new InvoiceItem(
-                            resultSet.getInt("invoice_item_id"),
+                            resultSet.getInt("item_id"),
                             resultSet.getInt("invoice_id"),
                             resultSet.getInt("product_id"),
                             resultSet.getInt("quantity"),
@@ -96,7 +96,7 @@ public class InvoiceItemDAO {
     public boolean deleteInvoiceItem(int invoiceItemId) {
 
         String query =
-                "DELETE FROM invoice_items WHERE invoice_item_id = ?";
+                "DELETE FROM invoice_items WHERE item_id = ?";
 
         try (
                 Connection connection = DBConnection.getConnection();

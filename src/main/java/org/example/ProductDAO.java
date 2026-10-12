@@ -196,33 +196,82 @@ public class ProductDAO {
 
     public boolean increaseStock(String sku, int quantity) {
 
-        if (quantity <= 0) {
-            System.out.println("Quantity must be greater than zero.");
+        if (sku == null || sku.isBlank() || quantity <= 0) {
+            System.out.println("Valid SKU and positive quantity are required.");
             return false;
         }
 
-        String query =
-                "UPDATE products " +
-                        "SET current_stock = current_stock + ? " +
-                        "WHERE sku = ?";
+        String findQuery =
+                "SELECT product_id FROM products WHERE sku = ?";
 
-        try (
-                Connection connection = DBConnection.getConnection();
-                PreparedStatement statement =
-                        connection.prepareStatement(query)
-        ) {
+        String updateQuery =
+                "UPDATE products SET current_stock = current_stock + ? " +
+                        "WHERE product_id = ?";
 
-            statement.setInt(1, quantity);
-            statement.setString(2, sku);
+        String movementQuery =
+                "INSERT INTO stock_movements " +
+                        "(product_id, movement_type, quantity, reference_type, " +
+                        "reference_id, notes) " +
+                        "VALUES (?, 'IN', ?, 'RESTOCK', NULL, ?)";
 
-            int rowsUpdated = statement.executeUpdate();
+        try (Connection connection = DBConnection.getConnection()) {
 
-            return rowsUpdated > 0;
+            connection.setAutoCommit(false);
+
+            try {
+                int productId;
+
+                try (PreparedStatement statement =
+                             connection.prepareStatement(findQuery)) {
+
+                    statement.setString(1, sku);
+
+                    try (ResultSet result = statement.executeQuery()) {
+                        if (!result.next()) {
+                            throw new SQLException("Product not found: " + sku);
+                        }
+
+                        productId = result.getInt("product_id");
+                    }
+                }
+
+                try (PreparedStatement statement =
+                             connection.prepareStatement(updateQuery)) {
+
+                    statement.setInt(1, quantity);
+                    statement.setInt(2, productId);
+
+                    if (statement.executeUpdate() != 1) {
+                        throw new SQLException("Stock update failed.");
+                    }
+                }
+
+                try (PreparedStatement statement =
+                             connection.prepareStatement(movementQuery)) {
+
+                    statement.setInt(1, productId);
+                    statement.setInt(2, quantity);
+                    statement.setString(3, "Stock increased through restocking");
+
+                    statement.executeUpdate();
+                }
+
+                connection.commit();
+                System.out.println("Stock increased and restock movement recorded.");
+                return true;
+
+            } catch (SQLException e) {
+                connection.rollback();
+                System.out.println("Restocking failed: " + e.getMessage());
+                System.out.println("Stock changes were rolled back.");
+                return false;
+
+            } finally {
+                connection.setAutoCommit(true);
+            }
 
         } catch (SQLException | IOException e) {
-            System.out.println("Unable to increase stock.");
-            System.out.println("Reason: " + e.getMessage());
-
+            System.out.println("Database error during restocking: " + e.getMessage());
             return false;
         }
     }

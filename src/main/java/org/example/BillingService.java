@@ -60,39 +60,6 @@ public class BillingService {
                 subtotal, discountAmount, taxAmount);
     }
 
-    // Reduce stock and record the sale movement
-    public boolean recordProductSale(
-            String sku, int quantity, int invoiceId) {
-
-        if (sku == null || sku.isBlank()
-                || quantity <= 0 || invoiceId <= 0) {
-            return false;
-        }
-
-        // Verify that the invoice exists and is still a draft
-        Invoice invoice = invoiceDAO.getInvoiceById(invoiceId);
-
-        if (invoice == null
-                || !"DRAFT".equals(invoice.getStatus())) {
-            System.out.println(
-                    "Invoice not found or is not in DRAFT status.");
-            return false;
-        }
-
-        // Verify the product and available stock
-        Product product = productDAO.getProductBySku(sku);
-
-        if (product == null
-                || product.getCurrentStock() < quantity) {
-            System.out.println(
-                    "Product not found or insufficient stock.");
-            return false;
-        }
-
-        // Reduce stock and record the movement with the invoice ID
-        return productDAO.reduceStockAndRecordMovement(
-                sku, quantity, invoiceId);
-    }
 
     // Calculate the discount amount and final invoice total
     public BigDecimal[] calculateInvoiceAmounts(
