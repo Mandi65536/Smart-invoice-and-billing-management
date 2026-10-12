@@ -21,8 +21,11 @@ public class SalesDashboard {
                         "FROM invoices";
 
         String paymentQuery =
-                "SELECT COALESCE(SUM(amount), 0) AS payments_received " +
-                        "FROM payments WHERE payment_status = 'COMPLETED'";
+                "SELECT COALESCE(SUM(p.amount), 0) AS payments_received " +
+                        "FROM payments p " +
+                        "JOIN invoices i ON p.invoice_id = i.invoice_id " +
+                        "WHERE p.payment_status = 'COMPLETED' " +
+                        "AND i.status = 'COMPLETED'";
 
         String productsSoldQuery =
                 "SELECT COALESCE(SUM(ii.quantity), 0) AS products_sold " +
