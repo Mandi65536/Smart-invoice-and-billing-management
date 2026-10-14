@@ -993,6 +993,7 @@ public class SwingUI extends JFrame {
         String sql = """
                 SELECT customer_id, customer_name, phone, email, billing_address
                 FROM customers
+                WHERE is_active = 1
                 ORDER BY customer_name
                 """;
 
@@ -1521,17 +1522,22 @@ public class SwingUI extends JFrame {
         if (sku == null) return;
 
         int confirm = JOptionPane.showConfirmDialog(
-                this, "Delete product " + sku + "?",
-                "Confirm deletion", JOptionPane.YES_NO_OPTION);
+                this,
+                "Mark product " + sku + " as inactive?\n"
+                        + "(It will be hidden from the POS but kept in history.)",
+                "Confirm deactivation",
+                JOptionPane.YES_NO_OPTION);
 
         if (confirm != JOptionPane.YES_OPTION) return;
 
+        String sql = "UPDATE products SET is_active = 0 WHERE sku = ?";
+
         try (Connection c = connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM products WHERE sku = ?")) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, sku);
-            showMessage(ps.executeUpdate() == 1
-                    ? "Product deleted."
+            int rows = ps.executeUpdate();
+            showMessage(rows == 1
+                    ? "Product marked inactive. It will no longer appear in the POS."
                     : "Product not found.");
         }
 
@@ -1577,25 +1583,28 @@ public class SwingUI extends JFrame {
     }
 
     private void dialogDeleteCustomer() {
-        CustomerChoice selected = pickCustomer("Delete which customer?");
+        CustomerChoice selected = pickCustomer("Deactivate which customer?");
         if (selected == null) return;
 
         int confirm = JOptionPane.showConfirmDialog(
                 this,
-                "Delete customer #" + selected.customerId + " · "
-                        + selected.customerName + "?",
-                "Confirm deletion",
+                "Mark customer #" + selected.customerId + " · "
+                        + selected.customerName + " as inactive?\n"
+                        + "(They will be hidden from new drafts but kept in history.)",
+                "Confirm deactivation",
                 JOptionPane.YES_NO_OPTION);
 
         if (confirm != JOptionPane.YES_OPTION) return;
 
+        String sql = "UPDATE customers SET is_active = 0 WHERE customer_id = ?";
+
         try (Connection c = connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM customers WHERE customer_id = ?")) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setInt(1, selected.customerId);
-            showMessage(ps.executeUpdate() == 1
-                    ? "Customer deleted."
-                    : "Deletion failed. The customer may have invoices.");
+            int rows = ps.executeUpdate();
+            showMessage(rows == 1
+                    ? "Customer marked inactive."
+                    : "Customer not found.");
         } catch (Exception e) {
             showError(e);
         }
@@ -1733,10 +1742,3 @@ public class SwingUI extends JFrame {
     }
 }
 
-// =====================================================================
-// PART 3 CONTINUES BELOW — DO NOT ADD A CLOSING BRACE HERE
-// =====================================================================
-
-// =====================================================================
-// PART 2 CONTINUES BELOW — DO NOT ADD A CLOSING BRACE HERE
-// =====================================================================

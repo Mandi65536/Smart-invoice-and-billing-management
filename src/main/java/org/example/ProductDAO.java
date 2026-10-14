@@ -126,7 +126,7 @@ public class ProductDAO {
 
     public boolean deleteProduct(String sku) {
 
-        String query = "DELETE FROM products WHERE sku = ?";
+        String query = "UPDATE products SET is_active = 0 WHERE sku = ?";
 
         try (
                 Connection connection = DBConnection.getConnection();
@@ -144,6 +144,17 @@ public class ProductDAO {
             System.out.println("Unable to delete product.");
             System.out.println("Reason: " + e.getMessage());
 
+            return false;
+        }
+    }
+    public boolean reactivateProduct(String sku) {
+        String query = "UPDATE products SET is_active = 1 WHERE sku = ?";
+        try (Connection c = DBConnection.getConnection();
+             PreparedStatement ps = c.prepareStatement(query)) {
+            ps.setString(1, sku);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            System.out.println("Unable to reactivate product: " + e.getMessage());
             return false;
         }
     }

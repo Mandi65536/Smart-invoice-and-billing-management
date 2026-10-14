@@ -180,7 +180,7 @@ public class CustomerDAO {
     public boolean deleteCustomer(int customerId) {
 
         String query =
-                "DELETE FROM customers WHERE customer_id = ?";
+                "UPDATE customers SET is_active = 0 WHERE customer_id = ?";
 
         try (
                 Connection connection = DBConnection.getConnection();
@@ -198,6 +198,17 @@ public class CustomerDAO {
             System.out.println("Unable to delete customer.");
             System.out.println("Reason: " + e.getMessage());
 
+            return false;
+        }
+    }
+    public boolean reactivateCustomer(int customerId) {
+        String query = "UPDATE customers SET is_active = 1 WHERE customer_id = ?";
+        try (Connection c = DBConnection.getConnection();
+             PreparedStatement ps = c.prepareStatement(query)) {
+            ps.setInt(1, customerId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            System.out.println("Unable to reactivate customer: " + e.getMessage());
             return false;
         }
     }
